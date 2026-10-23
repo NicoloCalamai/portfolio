@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nicolò Calamai — Portfolio</title>
+  <meta name="description" content="Portfolio di Nicolò Calamai, Product e Graphic Designer.">
+  <meta property="og:title" content="Nicolò Calamai — Portfolio">
+  <meta property="og:description" content="Product and Graphic Design">
+  <meta property="og:image" content="assets/room-1721.webp">
+  <meta name="theme-color" content="#141210">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap">
+  <link rel="preload" as="image" href="assets/room.webp" imagesrcset="assets/room-1721.webp 1721w, assets/room.webp 3442w" imagesizes="100vw">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-view="room">
+  <header class="topbar">
+    <a class="brand" href="#/">Nicolò Calamai</a>
+    <nav class="topnav">
+      <div class="view-toggle" role="group" aria-label="Modalità di visualizzazione">
+        <button type="button" data-set-view="room" aria-pressed="true">Stanza</button>
+        <button type="button" data-set-view="list" aria-pressed="false">Overview</button>
+      </div>
+      <a href="#/about">About</a>
+      <div class="contacts">
+        <button type="button" class="contacts-toggle" aria-expanded="false" aria-controls="contacts-panel">Contatti</button>
+        <div class="contacts-panel" id="contacts-panel" hidden></div>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="room-view" aria-label="Stanza interattiva">
+      <div class="room-stage">
+        <img class="room-img" src="assets/room.webp" srcset="assets/room-1721.webp 1721w, assets/room.webp 3442w" sizes="100vw" alt="La stanza di Nicolò: poster, magliette, uno sgabello e altri progetti" width="3442" height="1828">
+        <svg class="room-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="false"></svg>
+      </div>
+      <div class="room-label" aria-hidden="true"><span class="room-label-kicker"></span><span class="room-label-title"></span></div>
+      <p class="room-hint">Clicca sugli oggetti per esplorare la stanza</p>
+    </section>
+
+    <section class="list-view" aria-label="Overview dei progetti">
+      <div class="list-half list-product">
+        <h2 class="list-heading">Product Design</h2>
+        <div class="list-cards" data-category="product"></div>
+      </div>
+      <div class="list-half list-graphic">
+        <h2 class="list-heading">Graphic</h2>
+        <div class="list-cards" data-category="graphic"></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="sheet" hidden tabindex="-1" role="dialog" aria-modal="true"></div>
+
+  <div class="cover" aria-hidden="true">
+    <div class="cover-inner">
+      <span class="cover-name">Nicolò Calamai</span>
+      <span class="cover-rule cover-rule-1"></span>
+      <h1 class="cover-title">Portfolio</h1>
+      <span class="cover-rule cover-rule-2"></span>
+      <span class="cover-sub">Product and Graphic Design</span>
+    </div>
+  </div>
+
+  <script src="projects.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
