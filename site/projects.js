@@ -190,7 +190,7 @@ window.PROJECTS = [
 ];
 
 window.ABOUT = {
-  photo: "assets/hero/about.webp",
+  photo: "assets/hero/about.webp?v=2",
   email: "calamai.design@gmail.com",
   // Contatti mostrati nella tendina "Contatti" e nella pagina About. Le voci senza valore non vengono mostrate.
   contacts: [

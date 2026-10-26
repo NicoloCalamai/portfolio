@@ -23,7 +23,7 @@
 
   const projectHref = (project, item) => `#/p/${project.id}${item ? `/${item.id}` : ""}`;
   const projectName = (project) => project.title.join(" ");
-  const pageSrc = (n, w) => `assets/pages/p${String(n).padStart(2, "0")}-${w}.webp`;
+  const pageSrc = (n, w) => `assets/pages/p${String(n).padStart(2, "0")}-${w}.webp?v=2`;
 
   // ---------- Testo: **grassetto** e blocchi "- elenco" ----------
   const inline = (s) => s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\[\[(.+?)\]\]/g, '<span class="accent">$1</span>');
