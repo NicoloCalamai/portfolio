@@ -20,7 +20,10 @@ body {
   color: var(--ink);
   background: var(--room-bg);
   -webkit-font-smoothing: antialiased;
+  transition: background-color .7s var(--ease);
 }
+/* niente animazioni al primo disegno della pagina */
+.is-instant, .is-instant *, .is-instant *::before, .is-instant *::after { transition: none !important; }
 body.is-locked { overflow: hidden; }
 img { max-width: 100%; display: block; }
 a { color: inherit; }
@@ -44,17 +47,43 @@ strong { font-weight: 600; }
   font-weight: 500;
   letter-spacing: .02em;
   background: linear-gradient(rgba(0, 0, 0, .45), transparent);
-  transition: color .3s, background .3s;
+  transition: color .6s var(--ease);
 }
+/* fondo bianco della barra in overview: un livello che sfuma sopra il gradiente della stanza */
+.topbar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--white);
+  border-bottom: 1px solid var(--ink);
+  opacity: 0;
+  transition: opacity .6s var(--ease);
+}
+body[data-view="list"] .topbar::before { opacity: 1; }
 .brand { text-decoration: none; white-space: nowrap; }
 .topnav { display: flex; align-items: center; gap: clamp(14px, 2vw, 32px); }
 .topnav > a { text-decoration: none; }
 .topnav > a:hover, .brand:hover { opacity: .7; }
-.view-toggle { display: flex; border: 1px solid currentColor; border-radius: 999px; padding: 2px; }
-.view-toggle button { padding: 4px 14px; border-radius: 999px; text-transform: uppercase; letter-spacing: inherit; font-weight: 500; }
-.view-toggle button[aria-pressed="true"] { background: var(--white); color: var(--ink); }
-body[data-view="list"] .topbar { color: var(--ink); background: var(--white); border-bottom: 1px solid var(--ink); }
-body[data-view="list"] .view-toggle button[aria-pressed="true"] { background: var(--ink); color: var(--white); }
+/* Selettore Stanza / Overview: la "bolla" scorre sotto l'opzione scelta e si può trascinare */
+.view-toggle { position: relative; display: flex; border: 1px solid currentColor; border-radius: 999px; padding: 2px; touch-action: none; user-select: none; -webkit-user-select: none; }
+.view-toggle button { position: relative; z-index: 1; padding: 4px 14px; border-radius: 999px; text-transform: uppercase; letter-spacing: inherit; font-weight: 500; transition: color .35s ease; }
+.view-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 0;
+  border-radius: 999px;
+  background: var(--white);
+  transition: transform .55s cubic-bezier(.3, 1.35, .5, 1), width .55s cubic-bezier(.3, 1.35, .5, 1), background-color .6s var(--ease), scale .25s ease;
+}
+.view-toggle.is-dragging { cursor: grabbing; }
+.view-toggle.is-dragging .view-toggle-thumb { transition: background-color .6s var(--ease), scale .25s ease; scale: 1.08 1.12; }
+.view-toggle:not(.is-over-list) [data-set-view="room"], .view-toggle.is-over-list [data-set-view="list"] { color: var(--ink); }
+body[data-view="list"] .topbar { color: var(--ink); }
+body[data-view="list"] .view-toggle-thumb { background: var(--ink); }
+body[data-view="list"] .view-toggle:not(.is-over-list) [data-set-view="room"],
+body[data-view="list"] .view-toggle.is-over-list [data-set-view="list"] { color: var(--white); }
 
 /* Tendina contatti */
 .contacts { position: relative; }
@@ -99,6 +128,9 @@ body[data-view="list"] .view-toggle button[aria-pressed="true"] { background: va
 .contact-copy svg { width: 15px; height: 15px; }
 .contact-copy:hover, .contact-copy.is-copied { background: var(--ink); color: var(--white); }
 .about .contact-row { border-color: currentColor; }
+/* su fondo scuro il tasto "Copia" si riempie di bianco */
+.theme-dark .contact-copy:hover, .theme-dark .contact-copy.is-copied,
+.theme-grey .contact-copy:hover, .theme-grey .contact-copy.is-copied { background: var(--white); color: var(--ink); }
 
 /* ---------- Stanza ---------- */
 .room-view {
@@ -117,12 +149,15 @@ body[data-view="list"] .view-toggle button[aria-pressed="true"] { background: va
   filter: blur(40px) brightness(.45);
 }
 .room-stage {
+  --room-ratio: 3442 / 1828; /* impostato da app.js in base alla stanza in uso */
   position: relative;
-  width: min(100vw, calc(100vh * 3442 / 1828));
-  aspect-ratio: 3442 / 1828;
+  width: min(100vw, calc(100vh * var(--room-ratio)));
+  width: min(100vw, calc(100svh * var(--room-ratio)));
+  aspect-ratio: var(--room-ratio);
   transition: transform 1s var(--ease);
   will-change: transform;
 }
+.room-stage picture { display: contents; }
 .room-img { width: 100%; height: 100%; user-select: none; -webkit-user-drag: none; }
 .room-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 
@@ -184,12 +219,36 @@ body[data-view="list"] .view-toggle button[aria-pressed="true"] { background: va
 }
 body.is-zoomed .room-hint, body.has-explored .room-hint { opacity: 0; }
 
-body[data-view="list"] .room-view { display: none; }
+/* ---------- Passaggio stanza / overview ----------
+   La stanza (fissa, sopra l'elenco) si sfoca, si allontana e sfuma nel bianco; l'elenco compare con le card una dopo l'altra.
+   Al ritorno succede l'inverso. visibility cambia a fine animazione, così l'elemento nascosto non riceve clic. */
+.room-view { transition: opacity .7s var(--ease), filter .7s var(--ease), transform .7s var(--ease); }
+body[data-view="list"] .room-view {
+  opacity: 0;
+  filter: blur(14px);
+  transform: scale(1.06);
+  visibility: hidden;
+  transition: opacity .7s var(--ease), filter .7s var(--ease), transform .7s var(--ease), visibility 0s .7s;
+}
+/* in stanza la pagina non scorre (l'elenco resta sotto, invisibile) */
+html:has(body[data-view="room"]) { overflow: hidden; }
 
 /* ---------- Elenco (come l'indice del PDF) ---------- */
-.list-view { display: none; min-height: 100vh; padding-top: 58px; }
-body[data-view="list"] .list-view { display: grid; grid-template-columns: 1fr 1fr; }
+.list-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+  padding-top: 58px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .5s ease, visibility 0s .7s;
+}
+body[data-view="list"] .list-view { opacity: 1; visibility: visible; transition: opacity .6s ease .1s; }
 body[data-view="list"] { background: var(--white); }
+.list-heading, .card { opacity: 0; transform: translateY(28px); transition: opacity .4s ease, transform .5s var(--ease); }
+body[data-view="list"] .list-heading,
+body[data-view="list"] .card { opacity: 1; transform: none; transition: opacity .6s ease, transform .8s var(--ease); transition-delay: calc(.2s + var(--i, 0) * .07s); }
+body[data-view="list"] .list-heading { transition-delay: .15s; }
 .list-half { padding: clamp(24px, 3vw, 48px) var(--gutter) clamp(32px, 4vw, 64px); display: flex; flex-direction: column; }
 .list-product { background: var(--white); color: var(--ink); }
 .list-graphic { background: var(--grey); color: var(--white); }
@@ -286,10 +345,11 @@ body[data-view="list"] { background: var(--white); }
   left: 0;
   width: 22px;
   height: 22px;
-  border-left: 1px solid currentColor;
+  border-left: 1px solid var(--accent, currentColor);
 }
-.proj-text::before { top: 0; border-top: 1px solid currentColor; border-top-left-radius: 8px; }
-.proj-text::after { bottom: 0; border-bottom: 1px solid currentColor; border-bottom-left-radius: 8px; }
+.proj-text::before { top: 0; border-top: 1px solid var(--accent, currentColor); border-top-left-radius: 8px; }
+.proj-text::after { bottom: 0; border-bottom: 1px solid var(--accent, currentColor); border-bottom-left-radius: 8px; }
+.accent { color: var(--accent, inherit); }
 
 .proj-title { display: flex; align-items: flex-end; gap: 18px; margin: 10px 0 28px; }
 .proj-title h1 {
@@ -299,11 +359,11 @@ body[data-view="list"] { background: var(--white); }
   text-transform: uppercase;
   line-height: 1.15;
 }
-.proj-title .rule { flex: 1; min-width: 40px; height: 1px; margin-bottom: .55em; background: currentColor; }
+.proj-title .rule { flex: 1; min-width: 40px; height: 1px; margin-bottom: .55em; background: var(--accent, currentColor); }
 .proj-title .num { font-size: clamp(64px, 6.5vw, 128px); font-weight: 500; line-height: .8; }
 
 .prose { font-size: clamp(15px, 1vw, 17px); line-height: 1.5; }
-.prose p { margin: 0 0 1em; text-align: justify; hyphens: auto; }
+.prose p { margin: 0 0 1em; text-align: justify; }
 .prose ul { margin: 0 0 1em; padding: 0; list-style: none; }
 .prose li::before { content: "- "; }
 .proj-section-title { margin: 1.8em 0 .7em; font-size: clamp(15px, 1vw, 17px); font-weight: 600; text-transform: uppercase; }
@@ -328,24 +388,33 @@ body[data-view="list"] { background: var(--white); }
 
 .pages { max-width: 1920px; margin: 0 auto; }
 .pages img { width: 100%; height: auto; }
+.page-frame { position: relative; }
+/* zona cliccabile trasparente (QR code): si vede solo il bordo al passaggio del mouse o con la tastiera */
+.hotspot { position: absolute; border-radius: 6px; outline: 2px solid transparent; outline-offset: 3px; transition: outline-color .2s; }
+.hotspot:hover, .hotspot:focus-visible { outline-color: currentColor; }
+/* puntino che pulsa, come quelli degli oggetti della stanza; al massimo il 14% del QR, così resta leggibile da un altro telefono */
+.hotspot-dot { position: absolute; left: 50%; top: 50%; width: min(10px, 14%); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .3), 0 1px 6px rgba(0, 0, 0, .35); pointer-events: none; }
+.hotspot-dot::after { content: ""; position: absolute; inset: -1px; border: 1.5px solid #fff; border-radius: 50%; animation: hotspot-pulse 2.4s ease-out infinite; }
+@keyframes hotspot-pulse { from { transform: scale(1); opacity: .9; } to { transform: scale(5); opacity: 0; } }
+
+/* Tavole su telefono: una colonna di testi e immagini ritagliate dal PDF */
+.phone-pages { display: none; }
+body.is-compact .pages { display: none; }
+body.is-compact .phone-pages { display: block; padding: 0 var(--gutter); }
+.phone-page { padding: 28px 0; border-top: 1px solid currentColor; }
+.phone-page:first-child { border-top: 0; }
+.phone-page > .page-frame, .phone-page > .phone-text { margin-top: 16px; }
+.phone-page > :first-child { margin-top: 0; }
+.phone-page img { width: 100%; height: auto; border-radius: 8px; }
+.phone-text h3 { margin: 0; font-size: 20px; font-weight: 500; text-transform: uppercase; }
+.phone-text h4 { margin: 1.2em 0 .6em; font-size: 17px; font-weight: 500; }
+.phone-text h3 + h4 { margin-top: .6em; }
+.phone-text > :last-child { margin-bottom: 0; }
 
 .nda { max-width: 1100px; margin: 0 auto; padding: clamp(40px, 6vw, 100px) var(--gutter); }
 .nda-kicker { font-size: clamp(22px, 2vw, 36px); text-transform: uppercase; font-weight: 500; margin: 0 0 1em; }
 .nda h2 { font-size: clamp(18px, 1.4vw, 24px); font-weight: 400; margin: 0 0 1em; }
-.btn {
-  display: inline-block;
-  margin-top: 12px;
-  padding: 12px 26px;
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  text-decoration: none;
-  text-transform: uppercase;
-  font-weight: 500;
-  letter-spacing: .03em;
-  transition: background .25s, color .25s;
-}
-.btn:hover { background: var(--white); color: var(--ink); }
-.theme-light .btn:hover { background: var(--ink); color: var(--white); }
+.nda .contact-list { margin-top: 8px; }
 
 .proj-nav {
   display: grid;
@@ -373,15 +442,16 @@ body[data-view="list"] { background: var(--white); }
 }
 .about-photo { position: relative; }
 .about-photo img { width: 100%; }
-.about-ciao { margin: -.62em 0 0; font-size: clamp(64px, 7vw, 132px); font-weight: 300; line-height: 1; position: relative; }
+.about-ciao { margin: clamp(16px, 2vw, 36px) 0 0; font-size: clamp(64px, 7vw, 132px); font-weight: 300; line-height: 1; text-transform: uppercase; }
 .about-iam { margin-top: clamp(28px, 6vw, 110px); font-size: clamp(30px, 3.2vw, 60px); line-height: 1.12; text-transform: uppercase; font-weight: 300; }
 .about-iam strong { display: block; font-weight: 500; }
 .about-bio { font-size: clamp(15px, 1vw, 17px); line-height: 1.45; }
-.about-bio p { margin: 0 0 .9em; text-align: justify; hyphens: auto; }
+.about-bio p { margin: 0 0 .9em; text-align: justify; }
 .about-sep { background: currentColor; }
 .about-side h2 { margin: 0 0 .8em; font-size: clamp(22px, 2vw, 36px); font-weight: 500; text-transform: uppercase; }
 .about-side section + section { margin-top: clamp(28px, 3vw, 52px); }
-.about-side .software { grid-template-columns: repeat(3, auto); column-gap: 56px; }
+/* come nel PDF: tre colonne lette dall'alto in basso */
+.about-side .software { grid-template-columns: repeat(3, auto); grid-template-rows: repeat(4, auto); grid-auto-flow: column; column-gap: 56px; }
 .skills { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px 18px; list-style: none; margin: 0; padding: 0; }
 .skills li::before { content: none; }
 .skills li { display: flex; flex-direction: column; align-items: center; text-align: center; font-size: 14px; line-height: 1.35; }
@@ -409,15 +479,16 @@ body[data-view="list"] { background: var(--white); }
 .cover.is-leaving { -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); background: rgba(12, 9, 6, 0); opacity: 0; }
 .cover.is-leaving .cover-inner { opacity: 0; transform: scale(1.03); }
 .cover.is-gone { display: none; }
-/* Su telefono la stanza non c'è: si usa la sua immagine sfocata come sfondo. */
+/* Su telefono la copertina sta sopra la stanza verticale sfocata. */
 body.is-compact .cover::before {
   content: "";
   position: absolute;
   inset: -60px;
   z-index: -1;
-  background: url("assets/room-1721.webp") center / cover;
+  background: url("assets/room-phone.webp") center / cover;
   filter: blur(28px) brightness(.7);
 }
+body.is-compact .room-view::before { background-image: url("assets/room-phone.webp"); }
 body.is-compact .cover.is-leaving { transition: opacity .8s ease; }
 .cover-inner { width: 100%; display: flex; flex-direction: column; text-transform: uppercase; transition: opacity .6s ease, transform 1.3s var(--ease); }
 .cover-name, .cover-sub { font-size: clamp(13px, 1.45vw, 28px); font-weight: 500; }
@@ -445,6 +516,7 @@ body.is-compact .cover.is-leaving { transition: opacity .8s ease; }
   .card-img { aspect-ratio: 4 / 3; }
   .card-line { min-height: 24px; }
   .software, .about-side .software { grid-template-columns: repeat(2, auto); }
+  .about-side .software { grid-template-rows: repeat(6, auto); }
   .about { grid-template-columns: 1fr; }
   .skills { grid-template-columns: repeat(2, 1fr); }
   .proj-nav strong { font-size: 18px; }
@@ -453,12 +525,17 @@ body.is-compact .cover.is-leaving { transition: opacity .8s ease; }
   .cover-rule-1 { width: 55vw; margin-left: 16px; }
   .cover-title { margin-left: 10vw; }
   .cover-rule-2 { margin: 4px 16px 10px 30vw; }
+  .room-hint { font-size: 12px; white-space: nowrap; padding: 8px 14px; }
 }
-/* Su telefono si mostra solo l'elenco */
-body.is-compact .view-toggle { display: none; }
+/* Telefoni stretti: il nome non ci sta accanto a Stanza/Overview, About e Contatti (è comunque nella copertina e nelle schede) */
+@media (max-width: 480px) {
+  .topbar .brand { display: none; }
+  .topnav { flex: 1; justify-content: space-between; gap: 10px; }
+  .view-toggle button { padding: 4px 10px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition-duration: .01ms !important; animation: none !important; }
+  *, *::before, *::after { transition-duration: .01ms !important; transition-delay: 0s !important; animation: none !important; }
 }
 
 /* Tasto "Indietro" nelle schede: solo in overview (e quindi sempre su telefono) */

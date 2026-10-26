@@ -13,7 +13,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap">
-  <link rel="preload" as="image" href="assets/room.webp" imagesrcset="assets/room-1721.webp 1721w, assets/room.webp 3442w" imagesizes="100vw">
+  <link rel="preload" as="image" href="assets/room.webp" imagesrcset="assets/room-1721.webp 1721w, assets/room.webp 3442w" imagesizes="100vw" media="(min-width: 821px) and (pointer: fine), (min-width: 821px) and (orientation: landscape)">
+  <link rel="preload" as="image" href="assets/room-phone.webp" media="(max-width: 820px), (pointer: coarse) and (orientation: portrait)">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body data-view="room">
@@ -21,6 +22,7 @@
     <a class="brand" href="#/">Nicolò Calamai</a>
     <nav class="topnav">
       <div class="view-toggle" role="group" aria-label="Modalità di visualizzazione">
+        <span class="view-toggle-thumb" aria-hidden="true"></span>
         <button type="button" data-set-view="room" aria-pressed="true">Stanza</button>
         <button type="button" data-set-view="list" aria-pressed="false">Overview</button>
       </div>
@@ -35,7 +37,11 @@
   <main>
     <section class="room-view" aria-label="Stanza interattiva">
       <div class="room-stage">
-        <img class="room-img" src="assets/room.webp" srcset="assets/room-1721.webp 1721w, assets/room.webp 3442w" sizes="100vw" alt="La stanza di Nicolò: poster, magliette, uno sgabello e altri progetti" width="3442" height="1828">
+        <!-- su telefono la stanza verticale: stessa media query di compactQuery in app.js -->
+        <picture>
+          <source media="(max-width: 820px), (pointer: coarse) and (orientation: portrait)" srcset="assets/room-phone.webp" width="1024" height="1536">
+          <img class="room-img" src="assets/room.webp" srcset="assets/room-1721.webp 1721w, assets/room.webp 3442w" sizes="100vw" alt="La stanza di Nicolò: poster, magliette, uno sgabello e altri progetti" width="3442" height="1828">
+        </picture>
         <svg class="room-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="false"></svg>
       </div>
       <div class="room-label" aria-hidden="true"><span class="room-label-kicker"></span><span class="room-label-title"></span></div>
@@ -67,6 +73,7 @@
   </div>
 
   <script src="projects.js"></script>
+  <script src="pages-phone.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

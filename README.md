@@ -4,7 +4,7 @@ Sito statico (HTML/CSS/JS, nessun build, nessun database). Tutto ciò che viene 
 
 - `site/index.html`, `site/styles.css`, `site/app.js`: pagina, stile e logica (stanza interattiva, elenco, schede progetto).
 - `site/projects.js`: **contenuti** — testi dei progetti, pagine del PDF da mostrare e zone cliccabili della stanza.
-- `site/assets/`: immagini generate da `tools/build_assets.py` a partire dal PDF e dall'immagine della stanza.
+- `site/assets/`: immagini generate da `tools/build_assets.py` a partire dal PDF (`Portfolio def.pdf`) e dalle immagini della stanza (`stanza defdef.jpg` per computer, `grafica telefono def.jpg` per telefono).
 
 ## Anteprima in locale
 
@@ -14,7 +14,7 @@ python -m http.server 8000
 ```
 poi apri http://localhost:8000
 
-## Aggiornare le immagini dopo aver modificato il PDF
+## Aggiornare le immagini dopo aver modificato il PDF o le stanze
 
 ```
 pip install pymupdf pillow
@@ -22,9 +22,17 @@ python tools/build_assets.py
 ```
 Se cambia la numerazione delle pagine, aggiorna `GALLERY_PAGES` nello script e `pages` in `site/projects.js`.
 
+## Versione telefono delle tavole
+
+Su telefono le tavole non sono mostrate intere: ognuna diventa una colonna di blocchi (testo estratto dal PDF e ritagli
+delle immagini), generata dallo stesso script in `site/pages-phone.js` e `site/assets/phone/`.
+I riquadri da estrarre sono in `PHONE_LAYOUT` dentro `tools/build_assets.py` (coordinate del PDF, pagina 1920 × 1080):
+se cambia l'impaginazione di una tavola, aggiorna lì i suoi riquadri e rilancia lo script.
+
 ## Zone cliccabili
 
-Ogni zona è un poligono in pixel dell'immagine `site/assets/room.webp` (3442 × 1828), definito in `site/projects.js` (`zone.points`).
+Ogni zona è un poligono in pixel definito in `site/projects.js`: `zone.points` per la stanza orizzontale `site/assets/room.webp` (3442 × 1828),
+`zone.phone` per la stanza verticale mostrata su telefono `site/assets/room-phone.webp` (1024 × 1536).
 
 ## Pubblicazione su Cloudflare Pages
 
