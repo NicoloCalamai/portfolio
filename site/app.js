@@ -58,6 +58,10 @@
     storage.set("view", view);
     setView(view);
   }
+  // il nome in alto a sinistra riporta sempre nella stanza, anche dall'overview
+  document.addEventListener("click", (e) => {
+    if (e.target.closest(".brand") && body.dataset.view !== "room") chooseView("room");
+  });
 
   // ---------- Selettore a bolla: clic su un'opzione, oppure trascinamento / swipe della bolla ----------
   const toggle = document.querySelector(".view-toggle");
