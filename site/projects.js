@@ -204,8 +204,8 @@ window.ABOUT = {
     "Credo che **in un’epoca** prevalentemente **digitale**, **la capacità di dare forma fisica alle idee** dal modello di studio al prodotto finito sia il vero **valore aggiunto del design**.",
   ],
   education: [
-    "**Diploma scuola secondaria di secondo grado** presso Liceo **Artistico A. Frattini** con indirizzo design, Varese 2017-2021",
-    "**Laurea triennale in Design**, conseguita a pieni voti, presso **LABA** - Brescia 2021-2025",
+    "**Diploma scuola secondaria di secondo grado** presso Liceo **Artistico A. Frattini** con indirizzo design, Varese 2017-2022",
+    "**Laurea triennale in Design**, conseguita a pieni voti, presso **LABA** - Brescia 2022-2026",
   ],
   software: ["Alias AutoStudio", "Autodesk Fusion", "Autocad", "SketchUp", "Sketchbook", "Keyshot", "Photoshop", "Illustrator", "Indesign", "Lightroom Classic", "Figma"],
   softSkills: ["Pensiero critico e problem solving", "Creatività", "Curiosità", "Prototipazione e capacità manuali", "Dedizione e cura del dettaglio", "Empatia", "Lavoro in team", "Flessibilità e adattabilità"],
