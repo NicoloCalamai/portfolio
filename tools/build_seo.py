@@ -81,7 +81,7 @@ def info_line(entry):
 
 
 def page_src(n, w=1100):
-    return f"assets/pages/p{n:02d}-{w}.webp?v=2"
+    return f"assets/pages/p{n:02d}-{w}.webp?v=3"
 
 
 def project_name(p):
@@ -178,10 +178,18 @@ def head(title, desc, path, image, graph, og_type="website", noindex=False):
 
 
 # ---------- contenuto già scritto nell'HTML (lo stesso che app.js mostra nella scheda) ----------
+PAGE_TEXT = {}  # scritte delle tavole, da site/pages-phone.js
+
+
 def tavole(nums, alt, phone):
     out = []
     for n in nums:
         text = "".join(b["html"] for b in phone.get(str(n), []) if "html" in b)
+        # scritte della tavola (PAGE_TEXT) che non sono già nei blocchi di testo qui sopra
+        spans = PAGE_TEXT.get(str(n), [])
+        labels = [spans[i][6] for b in phone.get(str(n), []) for i in b.get("text", [])]
+        if labels:
+            text += f"<p>{escape(' · '.join(labels))}</p>"
         out.append(f'<section>{text}<img src="{page_src(n)}" width="1100" height="619" loading="lazy" alt="{escape(alt)} — tavola {n}"></section>')
     return "".join(out)
 
@@ -252,6 +260,7 @@ def fill(template, seo, intro="", prerender="", base=False):
 def main():
     data = load_content()
     projects, about, phone = data["PROJECTS"], data["ABOUT"], data.get("PHONE_PAGES", {})
+    PAGE_TEXT.update(data.get("PAGE_TEXT", {}))
     template = (SITE / "index.html").read_text(encoding="utf-8")
     me = person(about)
     today = date.today().isoformat()

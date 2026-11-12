@@ -7,6 +7,7 @@ Richiede: PyMuPDF (pip install pymupdf) e Pillow.
 """
 import io
 import json
+import math
 import re
 from html import escape as html_escape
 from pathlib import Path
@@ -37,7 +38,7 @@ THREE_TALL_HEAD = [HEAD, ("i", 35, 118, 645, 1046), ("i", 655, 118, 1265, 1046),
 SPREADS = [("i", 36, 120, 588, 515), ("i", 684, 118, 1237, 516), ("i", 1332, 120, 1884, 515),
            ("t", 0, 545, 960, 625), ("i", 36, 649, 588, 1045), ("i", 684, 649, 1236, 1045), ("i", 1332, 649, 1884, 1045)]
 PHONE_LAYOUT = {
-    6: [HEAD, ("i", 25, 100, 975, 1065), ("t", 975, 15, 1920, 370), ("i", 990, 560, 1900, 1065)],
+    6: [HEAD, ("i", 25, 100, 975, 1065), ("t", 975, 15, 1920, 370), ("i", 990, 375, 1900, 1065)],
     7: [("t", 0, 15, 640, 200), ("i", 80, 210, 600, 1060), ("i", 650, 75, 1900, 1060)],
     8: [HEAD, ("i", 0, 100, 1920, 1080)],
     9: [HEAD, ("i", 20, 100, 640, 980), ("i", 670, 100, 1900, 1000)],
@@ -68,6 +69,10 @@ PHONE_LAYOUT = {
     41: [("i", 0, 0, 1920, 1080)],
 }
 PHONE_WIDTH = 1100  # larghezza massima dei ritagli (un telefono è largo ~390 px x 3)
+# Le scritte delle tavole in questi font diventano testo vero sopra l'immagine (che viene esportata senza);
+# le altre (es. le quote in Arial dei disegni tecnici) restano parte dell'immagine.
+LIVE_FONTS = ("FuturaPT",)
+WEIGHTS = {"Book": 400, "Medium": 500, "Demi": 600, "Bold": 700}
 
 
 def save_webp(img: Image.Image, path: Path, quality=80):
@@ -129,13 +134,51 @@ def text_html(page, rect):
     return re.sub(r"((?:<li>.*?</li>)+)", r"<ul>\1</ul>", "".join(out))
 
 
-def build_phone_pages(doc):
+def live_spans(page):
+    """Scritte della pagina da rendere testo vero. Ognuna è [x, y, lunghezza, corpo, peso, colore, testo, angolo]:
+    (x, y) è l'inizio della linea di base, la lunghezza è misurata lungo la direzione del testo (angolo in gradi,
+    -90 = dal basso verso l'alto). Restituisce anche il riquadro di ogni scritta e del suo blocco."""
+    spans = []
+    for block in page.get_text("rawdict")["blocks"]:
+        if block["type"] != 0:
+            continue
+        for line in block["lines"]:
+            dx, dy = line["dir"]
+            for span in line["spans"]:
+                if not span["font"].startswith(LIVE_FONTS):
+                    continue
+                chars = span["chars"]
+                while chars and not chars[0]["c"].strip():
+                    chars = chars[1:]
+                while chars and not chars[-1]["c"].strip():
+                    chars = chars[:-1]
+                if not chars:
+                    continue
+                ox, oy = chars[0]["origin"]
+                x0, y0, x1, y1 = chars[-1]["bbox"]
+                length = max((cx - ox) * dx + (cy - oy) * dy for cx in (x0, x1) for cy in (y0, y1))
+                style = span["font"].split("-")[-1]
+                color = f"#{span['color']:06x}"
+                spans.append({
+                    "data": [round(ox, 1), round(oy, 1), round(length, 1), round(span["size"], 2), WEIGHTS.get(style, 400),
+                             "" if color == "#000000" else color, "".join(c["c"] for c in chars),
+                             round(math.degrees(math.atan2(dy, dx)))],
+                    "bbox": fitz.Rect(span["bbox"]),
+                    "block": fitz.Rect(block["bbox"]),
+                })
+    return spans
+
+
+def build_phone_pages(doc, live, phone_text):
+    """`phone_text`: HTML dei riquadri di testo, letto da text_html prima che le scritte venissero tolte dalle pagine."""
     pages = {}
     for n, layout in PHONE_LAYOUT.items():
         page, blocks = doc[n - 1], []
+        spans = live.get(n, [])
+        text_rects = [fitz.Rect(r) for kind, *r in layout if kind == "t"]
         for i, (kind, *rect) in enumerate(layout, 1):
             if kind == "t":
-                html = text_html(page, rect)
+                html = phone_text[n][i - 1]
                 if html:
                     blocks.append({"html": html})
                 continue
@@ -144,10 +187,26 @@ def build_phone_pages(doc):
             img = render(page, clip=clip, width=width)
             name = f"p{n:02d}-{i}.webp"
             save_webp(img, OUT / "phone" / name, quality=78)
-            blocks.append({"src": f"assets/phone/{name}", "w": img.width, "h": img.height, "rect": [round(v) for v in clip]})
+            block = {"src": f"assets/phone/{name}?v=3", "w": img.width, "h": img.height, "rect": [round(v) for v in clip]}
+            # scritte che cadono in questo ritaglio e non sono già nei blocchi di testo
+            inside = [j for j, sp in enumerate(spans) if clip.contains((sp["bbox"].tl + sp["bbox"].br) / 2)
+                      and not any(sp["block"] in r for r in text_rects)]
+            if inside:
+                block["text"] = inside
+            blocks.append(block)
         pages[n] = blocks
-    js = "// Generato da tools/build_assets.py: tavole del PDF riorganizzate in verticale per telefono.\n"
-    js += f"window.PHONE_PAGES = {json.dumps(pages, ensure_ascii=False, indent=1)};\n"
+    return pages
+
+
+def write_pages_js(phone, live):
+    text = {n: [sp["data"] for sp in spans] for n, spans in live.items() if spans}
+    js = "// Generato da tools/build_assets.py.\n"
+    js += "// PAGE_TEXT: scritte delle tavole come testo vero, [x, y linea di base, lunghezza, corpo, peso, colore, testo, angolo]\n"
+    js += "// in punti del PDF (pagina 1920 x 1080). PHONE_PAGES: tavole riorganizzate in verticale per telefono\n"
+    js += "// (`text` = indici delle scritte di PAGE_TEXT da mostrare sopra quel ritaglio).\n"
+    rows = ",\n".join(f"{json.dumps(str(n))}:[\n" + ",\n".join(json.dumps(r, ensure_ascii=False) for r in rs) + "]" for n, rs in text.items())
+    js += f"window.PAGE_TEXT = {{\n{rows}}};\n"
+    js += f"window.PHONE_PAGES = {json.dumps(phone, ensure_ascii=False, indent=1)};\n"
     (ROOT / "site" / "pages-phone.js").write_text(js, encoding="utf-8")
 
 
@@ -156,12 +215,22 @@ def main():
     for n in TITLE_PAGES:
         remove_titles(doc[n - 1])
 
+    # Le scritte vengono lette prima di toglierle dalle tavole: sul sito sono testo vero sovrapposto all'immagine.
+    live = {n: live_spans(doc[n - 1]) for n in GALLERY_PAGES}
+    phone_text = {n: {i: text_html(doc[n - 1], r) for i, (k, *r) in enumerate(layout) if k == "t"}
+                  for n, layout in PHONE_LAYOUT.items()}
+    for n, spans in live.items():
+        page = doc[n - 1]
+        for sp in spans:
+            page.add_redact_annot(sp["bbox"], fill=False)
+        page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE, graphics=fitz.PDF_REDACT_LINE_ART_NONE)
+
     for n in GALLERY_PAGES:
         big = render(doc[n - 1], width=WIDTHS[0])
         for w in WIDTHS:
             img = big if w == big.width else big.resize((w, round(big.height * w / big.width)), Image.LANCZOS)
             save_webp(img, OUT / "pages" / f"p{n:02d}-{w}.webp")
-    build_phone_pages(doc)
+    write_pages_js(build_phone_pages(doc, live, phone_text), live)
 
     for name, n in HERO_PAGES.items():
         page = doc[n - 1]

@@ -1,5 +1,5 @@
 (() => {
-  const { PROJECTS, ROOM, ABOUT, PHONE_PAGES = {} } = window;
+  const { PROJECTS, ROOM, ABOUT, PHONE_PAGES = {}, PAGE_TEXT = {} } = window;
   const SVG_NS = "http://www.w3.org/2000/svg";
   const body = document.body;
   const stage = document.querySelector(".room-stage");
@@ -31,7 +31,7 @@
     return m[1] ? "#/about" : `#/p/${m[2]}${m[3] ? `/${m[3]}` : ""}`;
   };
   const projectName = (project) => project.title.join(" ");
-  const pageSrc = (n, w) => `assets/pages/p${String(n).padStart(2, "0")}-${w}.webp?v=2`;
+  const pageSrc = (n, w) => `assets/pages/p${String(n).padStart(2, "0")}-${w}.webp?v=3`;
 
   // ---------- Testo: **grassetto** e blocchi "- elenco" ----------
   const inline = (s) => s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\[\[(.+?)\]\]/g, '<span class="accent">$1</span>');
@@ -289,17 +289,61 @@
       })
       .join("");
   const FULL_PAGE = [0, 0, 1920, 1080];
+
+  // Scritte delle tavole come testo vero (PAGE_TEXT, da pages-phone.js), sopra l'immagine che è esportata senza.
+  // Ogni scritta parte dalla sua linea di base nel PDF; corpo e lunghezza sono in proporzione al riquadro mostrato
+  // (unità cqw), così il testo segue l'immagine a qualsiasi larghezza. `idx`: solo alcune scritte (ritagli per telefono).
+  const escapeHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const textLayer = (n, [x0, y0, x1, y1], idx) => {
+    const all = PAGE_TEXT[n] || [];
+    const list = idx ? idx.map((i) => all[i]) : all;
+    if (!list.length) return "";
+    const w = x1 - x0, h = y1 - y0;
+    const spans = list.map(([x, y, len, size, weight, color, text, angle]) => {
+      let style = `left:${pct((x - x0) / w)};top:${pct((y - y0) / h)};--s:${+((size / w) * 100).toFixed(4)};--l:${+(len / w).toFixed(5)}`;
+      if (weight !== 400) style += `;font-weight:${weight}`;
+      if (color) style += `;color:${color}`;
+      if (angle) style += `;--r:${angle}deg`;
+      return `<span class="pt" style="${style}"><span>${escapeHtml(text)}</span> </span>`;
+    });
+    return `<div class="page-text">${spans.join("")}</div>`;
+  };
+  // Il font del sito non ha esattamente le larghezze di quello del PDF: ogni scritta viene allargata o stretta
+  // (scaleX) per occupare lo stesso spazio. Il rapporto non dipende dalla larghezza, quindi basta calcolarlo una volta.
+  function fitTextLayer(layer) {
+    const cw = layer.clientWidth;
+    if (!cw || layer.dataset.fit) return;
+    layer.classList.add("is-measuring");
+    const ratios = [...layer.children].map((el) => {
+      const width = el.firstChild.getBoundingClientRect().width;
+      return width ? (parseFloat(el.style.getPropertyValue("--l")) * cw) / width : 1;
+    });
+    layer.classList.remove("is-measuring");
+    [...layer.children].forEach((el, i) => el.style.setProperty("--k", Math.min(1.3, Math.max(0.7, ratios[i])).toFixed(4)));
+    layer.dataset.fit = "1";
+  }
+  const fontsReady = (document.fonts?.ready || Promise.resolve()).then(() => {
+    // posizione della linea di base nel font del sito (in em, con interlinea 1)
+    const probe = document.createElement("div");
+    probe.className = "pt-probe";
+    probe.innerHTML = "<span></span>";
+    document.body.append(probe);
+    document.documentElement.style.setProperty("--pt-base", (probe.firstChild.offsetTop / 100).toFixed(3));
+    probe.remove();
+  });
+  const textObserver = "ResizeObserver" in window ? new ResizeObserver((entries) => fontsReady.then(() => entries.forEach((e) => fitTextLayer(e.target)))) : null;
+  const watchTextLayers = (root) => root.querySelectorAll(".page-text").forEach((l) => textObserver?.observe(l));
   const phonePageHtml = (n, alt, links) =>
     (PHONE_PAGES[n] || [{ src: pageSrc(n, 1100), w: 1100, h: 619, rect: FULL_PAGE }])
       .map((b) =>
         b.html
           ? `<div class="phone-text prose">${b.html}</div>`
-          : `<div class="page-frame"><a href="${b.src}" target="_blank" rel="noopener"><img src="${b.src}" width="${b.w}" height="${b.h}" loading="lazy" decoding="async" alt="${alt} — tavola ${n}"></a>${hotspots(links, n, b.rect)}</div>`
+          : `<div class="page-frame"><a href="${b.src}" target="_blank" rel="noopener"><img src="${b.src}" width="${b.w}" height="${b.h}" loading="lazy" decoding="async" alt="${alt} — tavola ${n}"></a>${b.text ? textLayer(n, b.rect, b.text) : ""}${hotspots(links, n, b.rect)}</div>`
       )
       .join("");
   const pagesHtml = (nums, alt, links = []) =>
     `<div class="pages">${nums
-      .map((n) => `<div class="page-frame"><a href="${pageSrc(n, 1920)}" target="_blank" rel="noopener"><img src="${pageSrc(n, 1920)}" srcset="${pageSrc(n, 1100)} 1100w, ${pageSrc(n, 1920)} 1920w" sizes="100vw" width="1920" height="1080" loading="lazy" decoding="async" alt="${alt} — tavola ${n}"></a>${hotspots(links, n, FULL_PAGE)}</div>`)
+      .map((n) => `<div class="page-frame"><a href="${pageSrc(n, 1920)}" target="_blank" rel="noopener"><img src="${pageSrc(n, 1920)}" srcset="${pageSrc(n, 1100)} 1100w, ${pageSrc(n, 1920)} 1920w" sizes="100vw" width="1920" height="1080" loading="lazy" decoding="async" alt="${alt} — tavola ${n}"></a>${textLayer(n, FULL_PAGE)}${hotspots(links, n, FULL_PAGE)}</div>`)
       .join("")}</div>
     <div class="phone-pages">${nums.map((n) => `<section class="phone-page">${phonePageHtml(n, alt, links)}</section>`).join("")}</div>`;
 
@@ -453,6 +497,7 @@
     const fresh = sheetKey !== key || !sheet.classList.contains("is-open");
     if (sheetKey !== key) {
       sheet.innerHTML = html;
+      watchTextLayers(sheet);
       sheet.className = `sheet theme-${theme}`;
       sheet.setAttribute("aria-label", title);
       sheetKey = key;

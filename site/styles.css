@@ -389,6 +389,16 @@ body[data-view="list"] .list-heading { transition-delay: .15s; }
 .pages { max-width: 1920px; margin: 0 auto; }
 .pages img { width: 100%; height: auto; }
 .page-frame { position: relative; }
+/* scritte della tavola: testo vero sopra l'immagine (vedi textLayer in app.js); i colori sono quelli del PDF */
+.page-text { position: absolute; inset: 0; container-type: inline-size; overflow: hidden; pointer-events: none; color: #000; }
+.phone-page .page-text { border-radius: 8px; }
+.pt {
+  position: absolute; white-space: pre; line-height: 1; font-size: calc(var(--s) * 1cqw); pointer-events: auto;
+  transform-origin: 0 0; transform: rotate(var(--r, 0deg)) translateY(calc(var(--pt-base, .85) * -1em)) scaleX(var(--k, 1));
+}
+.page-text.is-measuring .pt { transform: none; }
+.pt-probe { position: absolute; visibility: hidden; font: 400 100px/1 var(--font); }
+.pt-probe span { display: inline-block; height: 0; vertical-align: baseline; }
 /* zona cliccabile trasparente (QR code): si vede solo il bordo al passaggio del mouse o con la tastiera */
 .hotspot { position: absolute; border-radius: 6px; outline: 2px solid transparent; outline-offset: 3px; transition: outline-color .2s; }
 .hotspot:hover, .hotspot:focus-visible { outline-color: currentColor; }
