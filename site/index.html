@@ -3,11 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Nicolò Calamai — Portfolio</title>
-  <meta name="description" content="Portfolio di Nicolò Calamai, Product e Graphic Designer.">
-  <meta property="og:title" content="Nicolò Calamai — Portfolio">
-  <meta property="og:description" content="Product and Graphic Design">
-  <meta property="og:image" content="assets/room-1721.webp">
+  <!--seo-->
+  <title>Nicolò Calamai — Product e Graphic Designer | Portfolio</title>
+  <meta name="description" content="Portfolio di Nicolò Calamai, product e graphic designer di Bisuschio (Varese), laureato in Design alla LABA di Brescia. Prototipi in scala reale, arredo, mobilità, fanzine, t-shirt e poster automotive.">
+  <link rel="canonical" href="https://nicolocalamai.com/">
+  <meta name="author" content="Nicolò Calamai">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Nicolò Calamai — Portfolio">
+  <meta property="og:locale" content="it_IT">
+  <meta property="og:url" content="https://nicolocalamai.com/">
+  <meta property="og:title" content="Nicolò Calamai — Product e Graphic Designer | Portfolio">
+  <meta property="og:description" content="Portfolio di Nicolò Calamai, product e graphic designer di Bisuschio (Varese), laureato in Design alla LABA di Brescia. Prototipi in scala reale, arredo, mobilità, fanzine, t-shirt e poster automotive.">
+  <meta property="og:image" content="https://nicolocalamai.com/assets/og/home.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","@id":"https://nicolocalamai.com/#nicolo","name":"Nicolò Calamai","givenName":"Nicolò","familyName":"Calamai","url":"https://nicolocalamai.com/","image":"https://nicolocalamai.com/assets/hero/about.webp","jobTitle":"Product Designer e Graphic Designer","email":"mailto:calamai.design@gmail.com","address":{"@type":"PostalAddress","addressLocality":"Bisuschio","addressRegion":"VA","addressCountry":"IT"},"homeLocation":{"@type":"Place","name":"Bisuschio, Varese, Lombardia, Italia"},"alumniOf":[{"@type":"CollegeOrUniversity","name":"LABA – Libera Accademia di Belle Arti di Brescia"},{"@type":"HighSchool","name":"Liceo Artistico A. Frattini, Varese"}],"hasCredential":{"@type":"EducationalOccupationalCredential","name":"Laurea triennale in Design","credentialCategory":"degree"},"knowsAbout":["Product design","Graphic design","Industrial design","Prototipazione","Modellazione 3D","Stampa 3D","Alias AutoStudio","Autodesk Fusion","Autocad","SketchUp","Sketchbook","Keyshot","Photoshop","Illustrator","Indesign","Lightroom Classic","Figma"],"sameAs":["https://www.instagram.com/clm.design/"]},{"@type":"WebSite","@id":"https://nicolocalamai.com/#website","url":"https://nicolocalamai.com/","name":"Nicolò Calamai — Portfolio","inLanguage":"it-IT","author":{"@id":"https://nicolocalamai.com/#nicolo"}},{"@type":"ProfilePage","@id":"https://nicolocalamai.com/#page","url":"https://nicolocalamai.com/","name":"Nicolò Calamai — Product e Graphic Designer | Portfolio","mainEntity":{"@id":"https://nicolocalamai.com/#nicolo"},"isPartOf":{"@id":"https://nicolocalamai.com/#website"}}]}</script>
+  <!--/seo-->
   <meta name="theme-color" content="#141210">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,7 +38,7 @@
         <button type="button" data-set-view="room" aria-pressed="true">Stanza</button>
         <button type="button" data-set-view="list" aria-pressed="false">Overview</button>
       </div>
-      <a href="#/about">About</a>
+      <a href="/about/">About</a>
       <div class="contacts">
         <button type="button" class="contacts-toggle" aria-expanded="false" aria-controls="contacts-panel">Contatti</button>
         <div class="contacts-panel" id="contacts-panel" hidden></div>
@@ -35,6 +47,7 @@
   </header>
 
   <main>
+    <!--intro--><div class="sr-only"><h1>Nicolò Calamai — Product e Graphic Designer</h1><p>Portfolio di Nicolò Calamai, product e graphic designer di Bisuschio (Varese), laureato in Design alla LABA di Brescia. Prototipi in scala reale, arredo, mobilità, fanzine, t-shirt e poster automotive. Progetti: Progetto Pensilina, Sgabello, M.O.R.E. 2.0, Fanzine DSA, Bolidi Graphic Tees, Automotive Artworks.</p></div><!--/intro-->
     <section class="room-view" aria-label="Stanza interattiva">
       <div class="room-stage">
         <!-- su telefono la stanza verticale: stessa media query di compactQuery in app.js -->
@@ -60,13 +73,13 @@
     </section>
   </main>
 
-  <div class="sheet" hidden tabindex="-1" role="dialog" aria-modal="true"></div>
+  <div class="sheet" hidden tabindex="-1" role="dialog" aria-modal="true"><!--prerender--><!--/prerender--></div>
 
   <div class="cover" aria-hidden="true">
     <div class="cover-inner">
       <span class="cover-name">Nicolò Calamai</span>
       <span class="cover-rule cover-rule-1"></span>
-      <h1 class="cover-title">Portfolio</h1>
+      <p class="cover-title">Portfolio</p>
       <span class="cover-rule cover-rule-2"></span>
       <span class="cover-sub">Product and Graphic Design</span>
     </div>

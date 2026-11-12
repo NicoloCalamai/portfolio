@@ -47,3 +47,16 @@ Ogni push su `main` ripubblica il sito.
 Il PDF usa **Futura PT** (Adobe Fonts). Il sito usa Jost (Google Fonts), quasi identico. Per usare Futura PT originale:
 crea un Web Project su fonts.adobe.com con Futura PT (Book, Medium, Demi) e aggiungi il `<link>` del kit in `index.html`:
 il CSS lo usa automaticamente (`font-family: "futura-pt", ...`).
+
+## SEO (Google)
+
+Ogni progetto, elemento delle collezioni e l'About ha anche un indirizzo vero (`/progetti/sgabello/`, `/about/`…),
+con titolo, descrizione, anteprima social e testo propri: sono le pagine che Google indicizza. Il visitatore vede il sito
+di sempre con la scheda già aperta. Le genera, insieme a `sitemap.xml`, `robots.txt`, `404.html` e alle immagini in
+`site/assets/og/`, lo script:
+
+```
+python tools/build_seo.py
+```
+(richiede Node.js e Pillow). **Va rilanciato ogni volta che cambiano `site/projects.js`, `site/pages-phone.js` o
+`site/index.html`**, perché le pagine generate sono copie di `index.html`. Titoli e descrizione della home sono in cima allo script.

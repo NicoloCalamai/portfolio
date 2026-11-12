@@ -21,7 +21,15 @@
     ...(project.items || []).filter((item) => item.zone).map((item) => ({ project, item, ...item.zone })),
   ]);
 
-  const projectHref = (project, item) => `#/p/${project.id}${item ? `/${item.id}` : ""}`;
+  // Ogni scheda ha anche un indirizzo vero (/progetti/…/, /about/), generato da tools/build_seo.mjs: è quello che Google indicizza.
+  // Nei link si usa l'indirizzo vero; il click viene intercettato e la navigazione resta interna (#/…), come prima.
+  const projectHash = (project, item) => `#/p/${project.id}${item ? `/${item.id}` : ""}`;
+  const projectHref = (project, item) => `/progetti/${project.id}/${item ? `${item.id}/` : ""}`;
+  const pathToHash = (path) => {
+    const m = path.match(/^\/(?:(about)|progetti\/([\w-]+)(?:\/([\w-]+))?)\/?$/);
+    if (!m) return path === "/" ? "#/" : null;
+    return m[1] ? "#/about" : `#/p/${m[2]}${m[3] ? `/${m[3]}` : ""}`;
+  };
   const projectName = (project) => project.title.join(" ");
   const pageSrc = (n, w) => `assets/pages/p${String(n).padStart(2, "0")}-${w}.webp?v=2`;
 
@@ -239,7 +247,7 @@
     const zone = zones[i];
     deactivate();
     zoomTo(zone);
-    setTimeout(() => { location.hash = projectHref(zone.project, zone.item); }, reducedMotion.matches ? 0 : 750);
+    setTimeout(() => { location.hash = projectHash(zone.project, zone.item); }, reducedMotion.matches ? 0 : 750);
   }
   addEventListener("resize", () => {
     if (zoomedZone) zoomTo(zoomedZone);
@@ -417,6 +425,7 @@
     const a = ABOUT;
     return `
       ${sheetBar}
+      <h1 class="sr-only">About — Nicolò Calamai</h1>
       <div class="about">
         <div>
           <div class="about-photo"><img src="${a.photo}" alt="Nicolò Calamai"></div>
@@ -434,18 +443,21 @@
       </div>`;
   }
 
+  const HOME_TITLE = "Nicolò Calamai — Product e Graphic Designer | Portfolio";
+  let landing = null; // { hash, title } della pagina su cui si è arrivati: lì resta il titolo scritto nell'HTML
   let sheetKey = null;
   let closeTimer = null;
-  function openSheet(key, html, theme) {
+  function openSheet(key, html, theme, title) {
     clearTimeout(closeTimer);
     // una scheda diversa, o la stessa riaperta dopo averla chiusa, riparte sempre dalla cima
     const fresh = sheetKey !== key || !sheet.classList.contains("is-open");
     if (sheetKey !== key) {
       sheet.innerHTML = html;
       sheet.className = `sheet theme-${theme}`;
-      sheet.setAttribute("aria-label", key === "about" ? "About" : sheet.querySelector("h1")?.textContent || "");
+      sheet.setAttribute("aria-label", title);
       sheetKey = key;
     }
+    document.title = landing?.hash === location.hash ? landing.title : `${title} — Nicolò Calamai`;
     sheet.hidden = false;
     // solo ora: finché la scheda è nascosta (hidden) il browser ignora scrollTop
     if (fresh) sheet.scrollTop = 0;
@@ -458,6 +470,7 @@
     if (sheet.hidden) return;
     sheet.classList.remove("is-open");
     body.classList.remove("is-locked");
+    document.title = HOME_TITLE;
     closeTimer = setTimeout(() => {
       sheet.hidden = true;
       sheet.innerHTML = "";
@@ -481,7 +494,13 @@
   const visited = [];
   function goBack() {
     if (visited.length > 1) history.back();
-    else location.hash = location.hash.split("/").length > 3 ? location.hash.split("/").slice(0, 3).join("/") : "#/";
+    else {
+      // si sale di un livello sostituendo la voce corrente: altrimenti "Indietro" dal livello superiore
+      // (che ora ha una pagina prima di sé) tornerebbe alla scheda appena lasciata, in un giro senza fine
+      const up = location.hash.split("/").length > 3 ? location.hash.split("/").slice(0, 3).join("/") : "#/";
+      visited.length = 0;
+      location.replace(up);
+    }
   }
   function route() {
     setContactsOpen(false);
@@ -489,7 +508,7 @@
     else visited.push(location.hash);
     const [, section, id, itemId] = location.hash.replace(/^#\/?/, "#/").split("/");
     if (section === "about") {
-      openSheet("about", renderAbout(), "light");
+      openSheet("about", renderAbout(), "light", "About");
       return;
     }
     const project = section === "p" && PROJECTS.find((p) => p.id === id);
@@ -499,10 +518,25 @@
     }
     const theme = project.theme || (project.category === "graphic" ? "grey" : "light");
     const item = itemId && project.items?.find((it) => it.id === itemId);
-    if (item) openSheet(`${project.id}/${item.id}`, renderItem(project, item), theme);
-    else openSheet(project.id, renderProject(project), theme);
+    if (item) openSheet(`${project.id}/${item.id}`, renderItem(project, item), theme, item.title);
+    else openSheet(project.id, renderProject(project), theme, projectName(project));
   }
   addEventListener("hashchange", route);
+  // click normale su un indirizzo vero del sito: navigazione interna senza ricaricare (ctrl/cmd+click apre la pagina vera)
+  document.addEventListener("click", (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const a = e.target.closest("a[href^='/']");
+    const hash = a && !a.getAttribute("target") && pathToHash(a.getAttribute("href"));
+    if (!hash) return;
+    e.preventDefault();
+    location.hash = hash;
+  });
+  // arrivo diretto su /progetti/…/ o /about/ (es. da Google): si passa alla pagina principale con la scheda già aperta
+  {
+    const hash = location.pathname !== "/" && pathToHash(location.pathname);
+    if (hash) history.replaceState(null, "", `/${location.hash.length > 2 ? location.hash : hash}`);
+    if (hash) landing = { hash: location.hash, title: document.title };
+  }
 
   // ---------- Copertina ----------
   function runCover() {
